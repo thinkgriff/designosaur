@@ -42,6 +42,18 @@ export default function Page() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
   }
 
+  function hardResetToUploadState(message: string) {
+    setError(message);
+    setResults([]);
+    setSelectedIdx(0);
+
+    setFile(null);
+    cleanupPreview();
+    setPreviewUrl(null);
+
+    setPhase("idle");
+  }
+
   async function onPickFile(f: File | null) {
     setError(null);
     setResults([]);
@@ -55,18 +67,17 @@ export default function Page() {
       return;
     }
 
-    // Resize client-side to speed up upload + generation
     const resized = await resizeImage(f);
-
     setFile(resized);
+
     cleanupPreview();
     setPreviewUrl(URL.createObjectURL(resized));
+
     setPhase("ready");
   }
 
   async function onInputChange(e: React.ChangeEvent<HTMLInputElement>) {
     await onPickFile(e.target.files?.[0] ?? null);
-    // allow re-picking same file
     e.target.value = "";
   }
 
@@ -98,6 +109,14 @@ export default function Page() {
       const res = await fetch("/api/designosaur", { method: "POST", body: form });
       const data = await res.json().catch(() => ({} as any));
 
+      // RATE LIMITED: wipe the UI and stop
+      if (res.status === 429) {
+        hardResetToUploadState(
+          data?.error || "Too many dinos 🦖💨 Please try again later."
+        );
+        return;
+      }
+
       if (!res.ok) {
         throw new Error(data?.error || `Generation failed (${res.status})`);
       }
@@ -111,6 +130,9 @@ export default function Page() {
     } catch (err: any) {
       setError(err?.message ?? "Something went wrong.");
       setPhase(file ? "ready" : "idle");
+    } finally {
+      // If we hard-reset due to 429, phase is already idle.
+      setPhase((p) => (p === "transforming" ? (file ? "ready" : "idle") : p));
     }
   }
 
@@ -123,10 +145,6 @@ export default function Page() {
     document.body.appendChild(a);
     a.click();
     a.remove();
-  }
-
-  function regenerate() {
-    generateThree();
   }
 
   const primaryDisabled = !file || isLoading;
@@ -190,6 +208,7 @@ export default function Page() {
           </div>
         )}
 
+        {/* Primary CTA: hidden when rate-limited because file is cleared */}
         <button
           className="primary"
           disabled={primaryDisabled}
@@ -203,7 +222,7 @@ export default function Page() {
         </button>
 
         {results.length > 0 && (
-          <button className="secondary" onClick={regenerate} disabled={isLoading}>
+          <button className="secondary" onClick={generateThree} disabled={isLoading}>
             Generate another
           </button>
         )}
@@ -280,7 +299,6 @@ export default function Page() {
           overflow: hidden;
           cursor: pointer;
 
-          /* Mobile: stop the image from becoming a skyscraper */
           max-height: 58vh;
           min-height: 260px;
           display: grid;
@@ -350,7 +368,7 @@ export default function Page() {
         .thumb img {
           width: 100%;
           height: 100%;
-          object-fit: contain; /* no cropping */
+          object-fit: contain;
           background: white;
           display: block;
         }
@@ -392,7 +410,7 @@ export default function Page() {
         .error {
           margin-top: 10px;
           color: #b00020;
-          font-weight: 800;
+          font-weight: 900;
           text-align: center;
         }
 
