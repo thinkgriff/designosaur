@@ -2,10 +2,6 @@
 
 import { useState } from "react";
 
-export const metadata = {
-  title: "Designosaur Me",
-};
-
 export default function Page() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
