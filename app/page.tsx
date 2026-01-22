@@ -5,7 +5,7 @@ import { useState } from "react";
 export default function Page() {
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [results, setResults] = useState<string[]>([]);
+  const [results, setResults] = useState<string[]>(() => []);
   const [selected, setSelected] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -19,11 +19,13 @@ export default function Page() {
   }
 
   async function generate() {
-    if (!file) return;
-    setLoading(true);
-    setResults([]);
-    setSelected(null);
+  if (!file) return;
 
+  setLoading(true);
+  setResults([]);        // always reset to array
+  setSelected(null);
+
+  try {
     const formData = new FormData();
     formData.append("image", file);
 
@@ -32,11 +34,27 @@ export default function Page() {
       body: formData,
     });
 
-    const data = await res.json();
-    setResults(data.images);
-    setSelected(data.images[0]);
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      const msg =
+        data?.error || data?.message || `Request failed (${res.status})`;
+      throw new Error(msg);
+    }
+
+    const imgs = Array.isArray(data?.images) ? data.images : [];
+    setResults(imgs);
+    setSelected(imgs[0] ?? null);
+  } catch (err: any) {
+    console.error(err);
+    alert(err?.message || "Something went wrong generating your Designosaur.");
+    setResults([]); // keep it an array no matter what
+    setSelected(null);
+  } finally {
     setLoading(false);
   }
+}
+
 
   return (
     <div className="wrap">
