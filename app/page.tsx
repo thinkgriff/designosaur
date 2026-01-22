@@ -98,10 +98,14 @@ export default function Page() {
         )}
 
         <button
-          disabled={!file || loading}
-          className="primary"
-          onClick={results.length ? undefined : generate}
-        >
+  disabled={!file || loading}
+  className="primary"
+  onClick={() => {
+    if (!file || loading) return;
+    if (!results.length) generate();
+  }}
+>
+
           {results.length ? "Download" : "Designosaur Me"}
         </button>
 
