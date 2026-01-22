@@ -126,17 +126,32 @@ export default function Page() {
           z-index: 1;
         }
 
-        h1 {
-          font-size: clamp(2.4rem, 8vw, 4rem);
-          line-height: 0.95;
-          text-align: center;
-          margin-bottom: 8px;
-        }
+       h1 {
+  font-family: var(--font-erica), system-ui, -apple-system, Segoe UI,
+    Roboto, Arial, sans-serif;
+
+  /* Optical fixes */
+  font-size: clamp(2.1rem, 7vw, 3.4rem);
+  letter-spacing: -0.02em;
+  line-height: 0.9;
+
+  /* Color + rendering */
+  color: #111;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+
+  text-align: center;
+  margin-bottom: 6px;
+}
+
 
         .subtitle {
           text-align: center;
+  color: #444;
+  font-size: 0.95rem;
           margin-bottom: 16px;
         }
+
 
         .imageArea {
           border: 2px dashed #ccc;
